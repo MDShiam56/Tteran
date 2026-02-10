@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>tteran Premium Earning Hub</title>
+    
+    <script src='//libtl.com/sdk.js' data-zone='10592007' data-sdk='show_10592007'></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --red: #ff0000; --bg: #0a0000; }
+        body { background-color: var(--bg); color: white; font-family: 'Hind Siliguri', sans-serif; margin: 0; overflow-x: hidden; user-select: none; }
+        .glass { background: rgba(255, 0, 0, 0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255, 0, 0, 0.2); }
+        .btn-red { background: linear-gradient(90deg, #ff0000, #b30000); transition: 0.3s; }
+        .btn-red:active { transform: scale(0.95); }
+        .input-box { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 0, 0, 0.1); outline: none; }
+        .input-box:focus { border-color: var(--red); }
+        #notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); z-index: 9999; width: 85%; transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        #notification.active { top: 30px; }
+        .hidden { display: none; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+    </style>
+</head>
+<body>
+
+    <div id="notification" class="glass p-4 rounded-2xl flex items-center space-x-3 border-b-2 border-red-600">
+        <div class="w-10 h-10 bg-red-600/20 rounded-full flex items-center justify-center text-red-500"><i class="fas fa-bell"></i></div>
+        <p id="notif-msg" class="text-sm font-bold"></p>
+    </div>
+
+    <div id="auth-page" class="min-h-screen flex flex-col items-center justify-center px-6">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 glass rounded-3xl flex items-center justify-center mx-auto mb-4"><i class="fas fa-robot text-4xl text-red-500"></i></div>
+            <h1 class="text-3xl font-black">tteran <span class="text-red-600">BOT</span></h1>
+        </div>
+
+        <div id="login-form" class="glass p-8 rounded-[40px] w-full max-w-sm">
+            <h2 class="text-xl font-bold mb-6 text-center">লগইন</h2>
+            <input type="email" id="login-email" placeholder="ইমেইল" class="input-box w-full py-3 px-4 rounded-2xl mb-4 text-sm">
+            <input type="password" id="login-pass" placeholder="পাসওয়ার্ড" class="input-box w-full py-3 px-4 rounded-2xl mb-6 text-sm">
+            <button onclick="loginUser()" class="btn-red w-full py-4 rounded-2xl font-bold text-sm uppercase">লগইন করুন</button>
+            <p class="text-center text-xs mt-6 text-gray-500">অ্যাকাউন্ট নেই? <span onclick="toggleAuth()" class="text-red-500 font-bold cursor-pointer">সাইন-আপ</span></p>
+        </div>
+
+        <div id="signup-form" class="glass p-8 rounded-[40px] w-full max-w-sm hidden">
+            <h2 class="text-xl font-bold mb-6 text-center">নতুন অ্যাকাউন্ট</h2>
+            <input type="text" id="signup-name" placeholder="পুরো নাম" class="input-box w-full py-3 px-4 rounded-2xl mb-4 text-sm">
+            <input type="email" id="signup-email" placeholder="ইমেইল" class="input-box w-full py-3 px-4 rounded-2xl mb-4 text-sm">
+            <input type="password" id="signup-pass" placeholder="পাসওয়ার্ড" class="input-box w-full py-3 px-4 rounded-2xl mb-6 text-sm">
+            <button onclick="registerUser()" class="btn-red w-full py-4 rounded-2xl font-bold text-sm uppercase">সাইন-আপ করুন</button>
+            <p class="text-center text-xs mt-6 text-gray-500">ইতিমধ্যেই আছে? <span onclick="toggleAuth()" class="text-red-500 font-bold cursor-pointer">লগইন</span></p>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden min-h-screen">
+        <header class="p-6 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 glass rounded-xl flex items-center justify-center text-red-500"><i class="fas fa-user"></i></div>
+                <div><h1 id="user-display-name" class="text-lg font-bold">লোড হচ্ছে...</h1><p class="text-[10px] text-gray-500">Premium Earner</p></div>
+            </div>
+            <button onclick="logout()" class="text-red-500 text-sm font-bold">Logout</button>
+        </header>
+
+        <div class="px-6">
+            <div class="glass rounded-[40px] p-10 text-center animate-float border-b-4 border-red-600">
+                <p class="text-gray-400 text-xs font-semibold uppercase mb-2">মোট ব্যালেন্স</p>
+                <h2 class="text-6xl font-black"><span id="balance">0</span><span class="text-2xl text-red-500 ml-1">৳</span></h2>
+                <button onclick="handleWatchAd()" class="btn-red mt-8 px-10 py-4 rounded-2xl font-black text-sm uppercase">অ্যাড দেখে আয় করুন</button>
+            </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-2 gap-4">
+            <div onclick="handleWatchAd()" class="glass p-6 rounded-[30px] text-center"><i class="fas fa-play-circle text-2xl text-red-500 mb-2"></i><h3 class="text-sm font-bold">ভিডিও অ্যাড</h3><p class="text-[10px] text-red-400">৳ ১০</p></div>
+            <div onclick="handleReferral()" class="glass p-6 rounded-[30px] text-center"><i class="fas fa-user-plus text-2xl text-red-500 mb-2"></i><h3 class="text-sm font-bold">রেফার করুন</h3><p class="text-[10px] text-red-400">৳ ৪০</p></div>
+            <div onclick="alert('আগামী ১ তারিখে চালু হবে')" class="glass p-6 rounded-[30px] col-span-2 flex items-center justify-between"><div class="flex items-center space-x-3"><i class="fas fa-wallet text-red-500"></i><span class="text-sm font-bold">উইথড্র সিস্টেম</span></div><i class="fas fa-lock text-red-900"></i></div>
+        </div>
+
+        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 glass px-10 py-3 rounded-full"><button onclick="location.reload()" class="btn-red w-12 h-12 rounded-full flex items-center justify-center shadow-lg"><i class="fas fa-home"></i></button></nav>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJIPJEGho9UFy6BqUxKmxyXpwNo_n5un4",
+            authDomain: "rarnhub.firebaseapp.com",
+            databaseURL: "https://rarnhub-default-rtdb.firebaseio.com",
+            projectId: "rarnhub",
+            storageBucket: "rarnhub.firebasestorage.app",
+            messagingSenderId: "999167812158",
+            appId: "1:999167812158:web:9c3fe37dae34aa8fa7a76f"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        let currentUser = null;
+
+        // URL থেকে রেফারেল আইডি চেক করা
+        const urlParams = new URLSearchParams(window.location.search);
+        const refBy = urlParams.get('ref');
+
+        function notify(msg) {
+            const el = document.getElementById('notification');
+            document.getElementById('notif-msg').innerText = msg;
+            el.classList.add('active');
+            setTimeout(() => el.classList.remove('active'), 3000);
+        }
+
+        function toggleAuth() {
+            document.getElementById('login-form').classList.toggle('hidden');
+            document.getElementById('signup-form').classList.toggle('hidden');
+        }
+
+        // সাইনআপ (রেফারেল লজিকসহ)
+        function registerUser() {
+            const name = document.getElementById('signup-name').value;
+            const email = document.getElementById('signup-email').value;
+            const pass = document.getElementById('signup-pass').value;
+
+            if(!name || !email || !pass) return alert("সব তথ্য দিন");
+
+            auth.createUserWithEmailAndPassword(email, pass).then((userCredential) => {
+                const user = userCredential.user;
+                
+                // নতুন ইউজারের ডেটা সেট করা
+                db.ref('users/' + user.uid).set({
+                    username: name,
+                    balance: 0,
+                    referredBy: refBy || "none"
+                });
+
+                // যদি কেউ রেফার করে থাকে, তবে তার অ্যাকাউন্টে ৪০ টাকা যোগ করা
+                if(refBy && refBy !== "none") {
+                    db.ref('users/' + refBy + '/balance').transaction((currentBalance) => {
+                        return (currentBalance || 0) + 40;
+                    });
+                }
+
+                notify("অ্যাকাউন্ট সফল হয়েছে!");
+            }).catch(e => alert(e.message));
+        }
+
+        function loginUser() {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            auth.signInWithEmailAndPassword(email, pass).then(() => {
+                notify("লগইন সফল!");
+            }).catch(e => alert("ভুল ইমেইল বা পাসওয়ার্ড"));
+        }
+
+        function logout() {
+            auth.signOut().then(() => location.reload());
+        }
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-page').classList.add('hidden');
+                document.getElementById('main-dashboard').classList.remove('hidden');
+                
+                db.ref('users/' + user.uid).on('value', snap => {
+                    const data = snap.val();
+                    if(data) {
+                        document.getElementById('user-display-name').innerText = data.username;
+                        document.getElementById('balance').innerText = data.balance;
+                    }
+                });
+            } else {
+                document.getElementById('auth-page').classList.remove('hidden');
+                document.getElementById('main-dashboard').classList.add('hidden');
+            }
+        });
+
+        function handleWatchAd() {
+            notify("বিজ্ঞাপন লোড হচ্ছে...");
+            if (typeof show_10592007 === 'function') {
+                show_10592007().then(() => {
+                    db.ref('users/' + currentUser.uid + '/balance').transaction((currentBalance) => {
+                        return (currentBalance || 0) + 10;
+                    });
+                    notify("১০ টাকা যোগ হয়েছে!");
+                });
+            } else {
+                if(confirm("অ্যাড কি শেষ করেছেন?")) {
+                    db.ref('users/' + currentUser.uid + '/balance').transaction((currentBalance) => {
+                        return (currentBalance || 0) + 10;
+                    });
+                    notify("১০ টাকা যোগ হয়েছে!");
+                }
+            }
+        }
+
+        // রেফারেল লিঙ্ক কপি করার সিস্টেম
+        function handleReferral() {
+            // আপনার ওয়েবসাইটের বর্তমান লিঙ্ক (যেমন: https://yourdomain.com)
+            const siteUrl = window.location.origin + window.location.pathname;
+            const referralLink = `${siteUrl}?ref=${currentUser.uid}`;
+            
+            // ক্লিপবোর্ডে কপি
+            navigator.clipboard.writeText(referralLink).then(() => {
+                notify("রেফার লিঙ্ক কপি হয়েছে!");
+                
+                // টেলিগ্রামে শেয়ার করার লিঙ্ক
+                const telegramMsg = encodeURIComponent(`এই লিঙ্কে জয়েন করে ইনকাম শুরু করো: ${referralLink}`);
+                window.open(`https://t.me/share/url?url=${referralLink}&text=${telegramMsg}`, "_blank");
+            });
+        }
+    </script>
+</body>
+</html>
